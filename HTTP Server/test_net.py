@@ -1,6 +1,7 @@
 from socket import socket
 from typing import Final
 from read_http import HTTPServer
+from logging_conf import logger
 
 HOST: Final = '127.0.0.1'
 PORT: Final = 54879
@@ -43,9 +44,9 @@ with socket() as sk:
     while True:
         connection, address = sk.accept()
         with connection:
-            print(f"Connect address {address}")
+            logger.info(f'Connect address {address}')
             a.read_http(connection)
             while data := connection.recv(1024):
-                print(f"Client message {data} {type(data)}")
+                logger.info(f"Client message {data} {type(data)}")
                 connection.sendall(b'Hello client socket')
-        print(f"Connection {address} lost")
+        logger.info(f"Connection {address} lost")

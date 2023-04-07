@@ -1,5 +1,6 @@
 from socket import socket
 from typing import BinaryIO
+from logging_conf import logger
 
 test_str = (
     b"GET /index.html HTTP/1.1\r\nHost: www.example.com\r\nConnection: keep-alive\r\n"
@@ -14,9 +15,9 @@ class HTTPServer:
         http_file = http.makefile("rb")
         http_list = self.read_byte_file(http_file)
         method, target, version_http = self.read_request_line(http_list.pop(0))
-        print(method, target, version_http)
+        logger.debug(f'Method: {method}, Target: {target}, Version HTTP: {version_http}')
         headers = self.read_header_lines(http_list)
-        print(headers)
+        logger.debug(f'Headers: {headers}')
 
     @staticmethod
     def read_byte_file(http_byte: BinaryIO) -> list[str]:
