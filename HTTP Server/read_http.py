@@ -1,7 +1,11 @@
+from os import listdir
 from socket import socket
 from typing import BinaryIO
+from types import MappingProxyType
+from os.path import join
 from logging_conf import logger
 from utilities import substring
+
 
 class HTTPServer:
     def __init__(self, port, host=""):
@@ -78,8 +82,46 @@ class HTTPError(Exception):
         return f"Num error: {self.num_error}, Error message: {self.error_message}"
 
 
-class Request:
-    def __init__(self, method, target, version, headers: dict, connection: socket):
+class FileManagement:
+    def __init__(self, target):
+        self.__update_path = None
+        self.target = target
+        self.valid_folders, self.server_path = ("view",), ["/",]
+        self.standart_path = [
+            join("/", valid_folder, file_name).replace("\\", "/")
+            for valid_folder in self.valid_folders
+            for file_name in listdir(valid_folder)
+        ]
+        self.special_folder_path = [
+            f"/{valid_folder}{path}"
+            for valid_folder in self.valid_folders
+            for path in ("/*", "/",)
+        ]
+
+    def validate_path(self):
+        if self.target in self.standart_path:
+            self.__update_path = ('standart', self.target.lstrip("/").split("/", 1),)
+        elif self.target in self.special_folder_path:
+            self.__update_path = ('special', self.target.lstrip("/").split("/", 1),)
+        elif self.target in self.server_path:
+            self.__update_path = ('server', self.target,)
+        else:
+            return False
+        logger.debug(f"Update path {self.__update_path}")
+        return True
+
+    def get_update_path(self):
+        return self.__update_path
+
+    def set_update_path(self, update_path):
+        self.__update_path = update_path
+
+
+class Request(FileManagement):
+    def __init__(
+            self, method: str, target: str, version: str, headers: dict, connection: socket
+    ):
+        super().__init__(target)
         self.method = method
         self.target = target
         self.version = version
@@ -101,15 +143,19 @@ class Request:
 
     def check_valid_request_line(self):
         if self.method not in (
-            "GET",
-            "POST",
-            "OPTIONS",
+                "GET",
+                "POST",
+                "OPTIONS",
         ):
             raise HTTPError(
                 "405",
                 "Method Not Allowed. Allowed: GET, POST, OPTIONS",
                 connection_host=self.connection,
             )
+
+        if not self.validate_path():
+            raise HTTPError("404", "Not Found", self.connection)
+
         if self.version != "HTTP/1.1":
             raise HTTPError(
                 "505",
@@ -134,19 +180,43 @@ class Request:
     def validate_accept(self):
         logger.debug(f"Accept: {self.accept}")
         if not any(
-            key
-            for key in self.accept
-            if set(self.accept.get(key, ())).intersection(
-                self.valid_accept.get(key, ())
-            )
+                key
+                for key in self.accept
+                if set(self.accept.get(key, ())).intersection(
+                    self.valid_accept.get(key, ())
+                )
         ):
             raise HTTPError("406", "Not Acceptable", self.connection)
 
-    def validate_path(self):
-        pass
+    def get_choose(self, path_type: str) -> dict:
+        dict_get = MappingProxyType(
+            {
+                "standart": self.standart_request,
+                "special": "",
+                "server": self.server_request,
+            }
+        )
+        return dict_get.get(path_type)
+
+    def standart_request(self, path):
+        folder, file_name = path
+        read_file = substring.read_file(folder, f'/{file_name}')
+        header = {"Content-Type": "text/html; charset=utf-8"}
+        Response('200', 'OK', self.connection, body=read_file, **header).send_response()
+
+    def server_request(self, path):
+        allow_path_request = (*self.server_path, *self.standart_path, *self.special_folder_path)
+        message_allow_path = f'\nAllow path requests: {allow_path_request}'
+        Response('200', message_allow_path, self.connection, ).send_response()
 
     def analyze_request(self):
         if self.method == "GET":
+            path_type, path = self.get_update_path()
+            logger.debug(f'Path type: {path_type}, Path: {path}')
+            path_type_method = self.get_choose(path_type)
+            path_type_method(path)
+
+        if self.method == "POST":
             pass
         if self.method == "OPTIONS":
             header = {
@@ -158,13 +228,13 @@ class Request:
 
 class Response:
     def __init__(
-        self,
-        status_code,
-        message,
-        connection_host: socket,
-        body=None,
-        version="HTTP/1.1",
-        **headers,
+            self,
+            status_code,
+            message,
+            connection_host: socket,
+            body=None,
+            version="HTTP/1.1",
+            **headers,
     ):
         self.version = version
         self.status_code = status_code
