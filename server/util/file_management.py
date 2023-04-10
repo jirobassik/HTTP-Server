@@ -7,7 +7,7 @@ class FileManagement:
     def __init__(self, target):
         self.__update_path = None
         self.target = target
-        self.valid_folders, self.server_path = ("view",), ["/", ]
+        self.valid_folders, self.server_path = ("view", "image",), ["/", ]
         self.standart_path = [
             join("/", valid_folder, file_name).replace("\\", "/")
             for valid_folder in self.valid_folders
@@ -30,6 +30,10 @@ class FileManagement:
             return False
         logger.debug(f"Update path {self.__update_path}")
         return True
+
+    @staticmethod
+    def get_folder_files(folder_name):
+        return listdir(folder_name)
 
     def get_update_path(self):
         return self.__update_path

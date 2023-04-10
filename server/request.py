@@ -82,7 +82,7 @@ class Request(FileManagement):
         dict_get = MappingProxyType(
             {
                 "standart": self.standart_request,
-                "special": "",
+                "special": self.special_request,
                 "server": self.server_request,
             }
         )
@@ -98,6 +98,21 @@ class Request(FileManagement):
         allow_path_request = (*self.server_path, *self.standart_path, *self.special_folder_path)
         message_allow_path = f'\nAllow path requests: {allow_path_request}'
         Response('200', message_allow_path, self.connection, ).send_response()
+
+    def special_request(self, path):
+        folder, file_name = path
+        match file_name:
+            case '':
+                self.special_print_all(folder)
+            case '*':
+                self.special_get_all(folder)
+
+    def special_print_all(self, folder_name):
+        folder_files = f'Folder files: {self.get_folder_files(folder_name)}'
+        Response('200', folder_files, self.connection).send_response()
+
+    def special_get_all(self, folder_name):
+        pass
 
     def analyze_request(self):
         if self.method == "GET":
