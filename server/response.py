@@ -1,5 +1,6 @@
 from socket import socket
 from .util.logging_conf import logger
+from .util.conf import ENCODING
 
 
 class Response:
@@ -24,12 +25,12 @@ class Response:
         reqeust_file = self.connection_host.makefile("wb")
         request_line = f"{self.version} {self.status_code} {self.message}\r\n"
         request_file_str += "\n" + request_line
-        reqeust_file.write(request_line.encode("iso-8859-1"))
+        reqeust_file.write(request_line.encode(ENCODING))
         if self.headers:
             for key, value in self.headers.items():
                 header_line = f"{key}: {value}\r\n"
                 request_file_str += header_line
-                reqeust_file.write(header_line.encode("iso-8859-1"))
+                reqeust_file.write(header_line.encode(ENCODING))
         if self.body:
             reqeust_file.write(self.body)
         reqeust_file.write(b"\r\n")

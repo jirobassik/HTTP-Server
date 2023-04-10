@@ -1,3 +1,4 @@
+from itertools import chain
 from socket import socket
 from types import MappingProxyType
 
@@ -95,7 +96,7 @@ class Request(FileManagement):
         Response('200', 'OK', self.connection, body=read_file, **header).send_response()
 
     def server_request(self, path):
-        allow_path_request = (*self.server_path, *self.standart_path, *self.special_folder_path)
+        allow_path_request = tuple(chain(self.server_path, self.standart_path, self.special_folder_path))
         message_allow_path = f'\nAllow path requests: {allow_path_request}'
         Response('200', message_allow_path, self.connection, ).send_response()
 

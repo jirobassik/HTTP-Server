@@ -2,6 +2,7 @@ from socket import socket
 from typing import BinaryIO
 from .util import substring
 from .util.logging_conf import logger
+from .util.conf import ENCODING
 from .http_error import HTTPError
 from .request import Request
 
@@ -25,7 +26,7 @@ class HTTPServer:
                 with self.connection:
                     logger.info(f"Connect address {address}")
                     try:
-                        self.read_http(self.connection)
+                        self.http_treatment(self.connection)
                     except HTTPError as error:
                         logger.warning(error)
                     while data := self.connection.recv(1024):
@@ -33,7 +34,7 @@ class HTTPServer:
                         self.connection.sendall(b"Hello client socket")
                 logger.info(f"Connection {address} lost")
 
-    def read_http(self, http: socket):
+    def http_treatment(self, http: socket):
         http_file = http.makefile("rb")
         http_list = self.read_byte_file(http_file)
         method, target, version_http = self.read_request_line(http_list.pop(0))
@@ -48,7 +49,7 @@ class HTTPServer:
     def read_byte_file(http_byte: BinaryIO) -> list[str]:
         headers = []
         while (line := http_byte.readline()) not in b"\r\n":
-            headers.append(line.decode("iso-8859-1").replace("\r\n", ""))
+            headers.append(line.decode(ENCODING).replace("\r\n", ""))
         return headers
 
     def read_request_line(self, req_line: str) -> tuple[str, str, str]:
