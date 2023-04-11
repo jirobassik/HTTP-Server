@@ -31,10 +31,11 @@ class Response:
                 header_line = f"{key}: {value}\r\n"
                 request_file_str += header_line
                 reqeust_file.write(header_line.encode(ENCODING))
+        reqeust_file.write(b"\r\n")
         if self.body:
             reqeust_file.write(self.body)
-        reqeust_file.write(b"\r\n")
         request_file_str += "\r\n"
         logger.debug(f"Response: {request_file_str}")
         reqeust_file.flush()
         reqeust_file.close()
+        self.connection_host.close()

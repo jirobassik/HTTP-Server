@@ -27,11 +27,9 @@ class HTTPServer:
                     logger.info(f"Connect address {address}")
                     try:
                         self.http_treatment(self.connection)
+                        logger.debug('Connection close')
                     except HTTPError as error:
                         logger.warning(error)
-                    while data := self.connection.recv(1024):
-                        logger.info(f"Client message {data} {type(data)}")
-                        self.connection.sendall(b"Hello client socket")
                 logger.info(f"Connection {address} lost")
 
     def http_treatment(self, http: socket):

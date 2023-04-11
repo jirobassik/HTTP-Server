@@ -1,5 +1,5 @@
 from os import listdir
-from os.path import join
+from os.path import join, splitext
 from .logging_conf import logger
 
 
@@ -34,6 +34,11 @@ class FileManagement:
     @staticmethod
     def get_folder_files(folder_name):
         return listdir(folder_name)
+
+    @staticmethod
+    def get_file_extension(file_name):
+        _, extension = splitext(file_name)
+        return extension
 
     def get_update_path(self):
         return self.__update_path

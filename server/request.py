@@ -79,6 +79,15 @@ class Request(FileManagement):
         ):
             raise HTTPError("406", "Not Acceptable", self.connection)
 
+    @staticmethod
+    def extension_content_type(extension: str) -> dict:
+        extension_dict = MappingProxyType({
+            ".html": "text/html",
+            ".css": "text/css",
+            ".png": "image/png",
+        })
+        return extension_dict.get(extension)
+
     def get_choose(self, path_type: str) -> dict:
         dict_get = MappingProxyType(
             {
@@ -92,13 +101,14 @@ class Request(FileManagement):
     def standart_request(self, path):
         folder, file_name = path
         read_file = substring.read_file(folder, f'/{file_name}')
-        header = {"Content-Type": "text/html; charset=utf-8"}
+        header = {"Content-Type": f"{self.extension_content_type(self.get_file_extension(file_name))}; charset=utf-8",
+                  'Content-Length': len(read_file)}
         Response('200', 'OK', self.connection, body=read_file, **header).send_response()
 
     def server_request(self, path):
         allow_path_request = tuple(chain(self.server_path, self.standart_path, self.special_folder_path))
-        message_allow_path = f'\nAllow path requests: {allow_path_request}'
-        Response('200', message_allow_path, self.connection, ).send_response()
+        headers = {'Allow path requests': allow_path_request}
+        Response('200', 'OK', self.connection, **headers).send_response()
 
     def special_request(self, path):
         folder, file_name = path
@@ -109,8 +119,8 @@ class Request(FileManagement):
                 self.special_get_all(folder)
 
     def special_print_all(self, folder_name):
-        folder_files = f'Folder files: {self.get_folder_files(folder_name)}'
-        Response('200', folder_files, self.connection).send_response()
+        headers = {'Folder files': self.get_folder_files(folder_name)}
+        Response('200', 'OK', self.connection, **headers).send_response()
 
     def special_get_all(self, folder_name):
         pass
