@@ -6,6 +6,7 @@ from .util.conf import ENCODING
 from .http_error import HTTPError
 from .request import Request
 
+
 class HTTPServer:
     def __init__(self, port, host=""):
         self.host = host
@@ -27,7 +28,7 @@ class HTTPServer:
                     logger.info(f"Connect address {address}")
                     try:
                         self.http_treatment(self.connection)
-                        logger.debug('Connection close')
+                        logger.debug("Connection close")
                     except HTTPError as error:
                         logger.warning(error)
                 logger.info(f"Connection {address} lost")
