@@ -36,13 +36,21 @@ class HTTPServer:
     def http_treatment(self, http: socket):
         http_file = http.makefile("rb")
         http_list = self.read_byte_file(http_file)
-        method, target, version_http = self.read_request_line(http_list.pop(0))
+        request_line = http_list.pop(0)
+        method, target, version_http = self.read_request_line(request_line)
         logger.debug(
             f"Method: {method}, Target: {target}, Version HTTP: {version_http}"
         )
         headers = self.read_header_lines(http_list)
         logger.debug(f"Headers: {headers}")
-        Request(method, target, version_http, headers, self.connection)
+        body = self.read_body(headers, http_file)
+        Request(method, target, version_http, headers, self.connection, body=body)
+
+    def read_body(self, header: dict, http_byte: BinaryIO):
+        if (content_length := int(header.get('Content-Length', '0'))) >= 0:  # Что делать с ошибкой?
+            body = http_byte.read(content_length)
+            return body
+        raise HTTPError("404?", "Empty body", self.connection)
 
     @staticmethod
     def read_byte_file(http_byte: BinaryIO) -> list[str]:

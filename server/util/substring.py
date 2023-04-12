@@ -6,9 +6,17 @@ def read_file_byte(path_folder: str, file_name: str):
         response = file.read()
     return response
 
-def write_file_byte(path_folder: str, file_name: str, data, method: str = 'a'):
-    with open(path_folder + file_name, f'{method}b') as file:
+def write_file_byte(path_folder: str, file_name: str, data):
+    with open(path_folder + file_name, f'wb') as file:
+        file.write(data)
+
+def add_file_byte(path_folder: str, file_name: str, data):
+    with open(path_folder + file_name, f'ab') as file:
         file.write(data)
 
 def clear_file(path_folder: str, file_name: str):
     open(path_folder + file_name, 'w').close()
+
+def create_file(path_folder: str, file_name: str, data):
+    with open(path_folder + file_name, 'w') as file:
+        file.write(data)

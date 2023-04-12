@@ -12,7 +12,7 @@ from .util.file_management import FileManagement
 
 class Request(FileManagement):
     def __init__(
-        self, method: str, target: str, version: str, headers: dict, connection: socket
+            self, method: str, target: str, version: str, headers: dict, connection: socket, body=None
     ):
         super().__init__(target)
         self.method = method
@@ -20,6 +20,7 @@ class Request(FileManagement):
         self.version = version
         self.headers = headers
         self.connection = connection
+        self.body = body
         self.valid_accept = {
             "text": (
                 "html",
@@ -39,9 +40,9 @@ class Request(FileManagement):
 
     def check_valid_request_line(self):
         if self.method not in (
-            "GET",
-            "POST",
-            "OPTIONS",
+                "GET",
+                "POST",
+                "OPTIONS",
         ):
             raise HTTPError(
                 "405",
@@ -49,7 +50,7 @@ class Request(FileManagement):
                 connection_host=self.connection,
             )
 
-        if not self.validate_path():
+        if not self.validate_path(self.method):
             raise HTTPError("404", "Not Found", self.connection)
 
         if self.version != "HTTP/1.1":
@@ -76,24 +77,13 @@ class Request(FileManagement):
     def validate_accept(self):
         logging_conf.logger.debug(f"Accept: {self.accept}")
         if not any(
-            key
-            for key in self.accept
-            if set(self.accept.get(key, ())).intersection(
-                self.valid_accept.get(key, ())
-            )
+                key
+                for key in self.accept
+                if set(self.accept.get(key, ())).intersection(
+                    self.valid_accept.get(key, ())
+                )
         ):
             raise HTTPError("406", "Not Acceptable", self.connection)
-
-    @staticmethod
-    def extension_content_type(extension: str) -> dict:
-        extension_dict = MappingProxyType(
-            {
-                ".html": "text/html",
-                ".css": "text/css",
-                ".png": "image/png",
-            }
-        )
-        return extension_dict.get(extension)
 
     def get_choose(self, path_type: str) -> dict:
         dict_get = MappingProxyType(
@@ -133,9 +123,9 @@ class Request(FileManagement):
         headers = {"Folder files": self.get_folder_files(folder_name)}
         Response("200", "OK", self.connection, **headers).send_response()
 
-    def special_get_all(self, folder_name):
+    def special_get_all(self, folder_name):  # Плохо
         path_to_bin_folder, name_bin_file = "server/temp_files", "/multiple.bin"
-        write_to_binary = substring.write_file_byte
+        write_to_binary = substring.add_file_byte
         boundary = getpid()
 
         substring.clear_file(path_to_bin_folder, name_bin_file)
@@ -161,20 +151,40 @@ class Request(FileManagement):
             "Content-Type": f"multipart/form-data; boundary={boundary}",
             "Content-Length": len(body),
         }
+        substring.clear_file(path_to_bin_folder, name_bin_file)
         Response("200", "OK", self.connection, body=body, **headers).send_response()
 
     def analyze_request(self):
-        if self.method == "GET":
-            path_type, path = self.get_update_path()
-            logging_conf.logger.debug(f"Path type: {path_type}, Path: {path}")
-            path_type_method = self.get_choose(path_type)
-            path_type_method(path)
+        match self.method:
+            case "GET":
+                self.get_request()
+            case "POST":
+                self.post_request()
+            case "OPTIONS":
+                self.options_request()
 
-        if self.method == "POST":
-            pass
-        if self.method == "OPTIONS":
-            header = {
-                "Allow": "GET, POST, OPTIONS",
-                "Allow-Headers": "Accept",
-            }
-            Response("200", "OK", self.connection, **header).send_response()
+    def get_request(self):
+        path_type, path = self.get_update_path()
+        logging_conf.logger.debug(f"Path type: {path_type}, Path: {path}")
+        path_type_method = self.get_choose(path_type)
+        path_type_method(path)
+
+    def post_request(self):
+        folder_name, file_name = self.split_path(self.target)
+        create_file, body = self.post_content_type()
+        create_file(folder_name, f'/{file_name}', body)
+        Response("200", "OK", self.connection).send_response()
+
+    def post_content_type(self):
+        if content_type := self.headers.get('Content-Type', ''):
+            if client_cont := self.client_content_type(content_type, self.body):
+                return client_cont
+        raise HTTPError('400', 'Bad request', self.connection)
+
+    def options_request(self):
+        header = {
+            "Allow": "GET, POST, OPTIONS",
+            "Allow-Headers": "Accept",
+            "POST-Headers": "Content-Type, Content-Length",
+        }
+        Response("200", "OK", self.connection, **header).send_response()
