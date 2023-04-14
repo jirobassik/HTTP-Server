@@ -80,6 +80,7 @@ class FileManagement:
     @staticmethod
     @lru_cache(maxsize=None, typed=True)
     def client_content_type(content_type: str, body):
+        print(content_type, body)
         if content_type in ('image/png', 'image/jpeg',):
             return write_file_byte, body
         elif content_type in ('text/css', 'text/html', 'text/plain', 'text/js',

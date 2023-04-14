@@ -1,4 +1,3 @@
-from os import getpid
 from itertools import chain
 from socket import socket
 from types import MappingProxyType
@@ -7,10 +6,10 @@ from .http_error import HTTPError
 from .util import substring
 from .util import logging_conf
 from .response import Response
-from .util.file_management import FileManagement
+from .multipart import Multipart
 
 
-class Request(FileManagement):
+class Request(Multipart):
     def __init__(
             self, method: str, target: str, version: str, headers: dict, connection: socket, body=None
     ):
@@ -117,41 +116,14 @@ class Request(FileManagement):
             case "":
                 self.special_print_all(folder)
             case "*":
-                self.special_get_all(folder)
+                self.special_send_all(folder)
 
     def special_print_all(self, folder_name):
         headers = {"Folder files": self.get_folder_files(folder_name)}
         Response("200", "OK", self.connection, **headers).send_response()
 
-    def special_get_all(self, folder_name):  # Плохо
-        path_to_bin_folder, name_bin_file = "server/temp_files", "/multiple.bin"
-        write_to_binary = substring.add_file_byte
-        boundary = getpid()
-
-        substring.clear_file(path_to_bin_folder, name_bin_file)
-        for number, file_name in enumerate(self.get_folder_files(folder_name)):
-            read_data_file = substring.read_file_byte(folder_name, f"/{file_name}")
-
-            sub_body = (
-                f"----{boundary}\r\n"
-                f"Content-Type: {self.extension_content_type(self.get_file_extension(file_name))}; "
-                f"charset=utf-8\r\n"
-                f'Content-Disposition: form-data; name="file{number + 1}"; filename="{file_name}"\r\n'
-                f"Content-Length: {len(read_data_file)}\r\n\r\n"
-            )
-            write_to_binary(path_to_bin_folder, name_bin_file, sub_body.encode())
-            write_to_binary(path_to_bin_folder, name_bin_file, read_data_file)
-            write_to_binary(path_to_bin_folder, name_bin_file, f"\r\n".encode())
-        write_to_binary(
-            path_to_bin_folder, name_bin_file, f"----{boundary}----\r\n".encode()
-        )
-
-        body = substring.read_file_byte(path_to_bin_folder, name_bin_file)
-        headers = {
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-            "Content-Length": len(body),
-        }
-        substring.clear_file(path_to_bin_folder, name_bin_file)
+    def special_send_all(self, folder_name):
+        body, headers = self.write_file_data(folder_name)
         Response("200", "OK", self.connection, body=body, **headers).send_response()
 
     def analyze_request(self):
@@ -176,7 +148,9 @@ class Request(FileManagement):
         Response("200", "OK", self.connection).send_response()
 
     def post_content_type(self):
+        print('post_cont')
         if content_type := self.headers.get('Content-Type', ''):
+            print(content_type)
             if client_cont := self.client_content_type(content_type, self.body):
                 return client_cont
         raise HTTPError('400', 'Bad request', self.connection)
