@@ -11,15 +11,15 @@ class FileManagement:
     def __init__(self, target):
         self.__update_path = None
         self.target = target
-        self.valid_folders, self.server_path = ("view", "image",), ["/", ]
-        self.standart_path = [
+        self.__valid_folders, self.__server_path = ("view", "image",), ["/", ]
+        self.__standart_path = [
             join("/", valid_folder, file_name).replace("\\", "/")
-            for valid_folder in self.valid_folders
+            for valid_folder in self.__valid_folders
             for file_name in listdir(valid_folder)
         ]
-        self.special_folder_path = [
+        self.__special_folder_path = [
             f"/{valid_folder}{path}"
-            for valid_folder in self.valid_folders
+            for valid_folder in self.__valid_folders
             for path in ("/*", "/",)
         ]
 
@@ -33,17 +33,17 @@ class FileManagement:
                 return True
 
     def validate_path_get(self) -> bool:
-        if self.target in self.standart_path:
+        if self.target in self.__standart_path:
             self.__update_path = (
                 "standart",
                 self.split_path(self.target),
             )
-        elif self.target in self.special_folder_path:
+        elif self.target in self.__special_folder_path:
             self.__update_path = (
                 "special",
                 self.split_path(self.target),
             )
-        elif self.target in self.server_path:
+        elif self.target in self.__server_path:
             self.__update_path = (
                 "server",
                 self.target,
@@ -53,35 +53,38 @@ class FileManagement:
         logger.debug(f"Update path {self.__update_path}")
         return True
 
+    def validate_path_post(self) -> bool:
+        folder_name, file_name = self.split_path(self.target)
+        if folder_name in self.__valid_folders and file_name:
+            return True
+        return False
+
     @staticmethod
-    def extension_content_type(extension: str) -> dict:
+    def extension_content_type(extension: str) -> str | None:
         extension_dict = MappingProxyType(
             {
                 ".html": "text/html",
                 ".css": "text/css",
                 ".png": "image/png",
+                ".jpeg": "image/jpeg",
+                ".svg": "image/svg+xml",
+                ".txt": "text/plain",
             }
         )
         return extension_dict.get(extension)
 
     @staticmethod
+    def get_folder_files(folder_name: str) -> list:
+        return listdir(folder_name)
+
+    @staticmethod
     @lru_cache(maxsize=None, typed=True)
     def client_content_type(content_type: str, body):
-        if content_type in ('image/png', 'image/jpeg', ):
+        if content_type in ('image/png', 'image/jpeg',):
             return write_file_byte, body
         elif content_type in ('text/css', 'text/html', 'text/plain', 'text/js',
                               'application/octet-stream', 'image/svg+xml'):
             return create_file, body.decode()
-
-    def validate_path_post(self) -> bool:
-        folder_name, file_name = self.split_path(self.target)
-        if folder_name in self.valid_folders and file_name:
-            return True
-        return False
-
-    @staticmethod
-    def get_folder_files(folder_name):
-        return listdir(folder_name)
 
     @staticmethod
     @lru_cache(maxsize=None)
@@ -94,8 +97,22 @@ class FileManagement:
     def split_path(path: str):
         return path.lstrip("/").split("/", 1)
 
-    def get_update_path(self):
+    @property
+    def update_path(self):
         return self.__update_path
 
-    def set_update_path(self, update_path):
+    @update_path.setter
+    def update_path(self, update_path):
         self.__update_path = update_path
+
+    @property
+    def server_path(self):
+        return self.__server_path
+
+    @property
+    def standart_path(self):
+        return self.__standart_path
+
+    @property
+    def special_folder_path(self):
+        return self.__special_folder_path

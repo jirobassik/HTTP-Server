@@ -164,7 +164,7 @@ class Request(FileManagement):
                 self.options_request()
 
     def get_request(self):
-        path_type, path = self.get_update_path()
+        path_type, path = self.update_path
         logging_conf.logger.debug(f"Path type: {path_type}, Path: {path}")
         path_type_method = self.get_choose(path_type)
         path_type_method(path)

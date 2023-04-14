@@ -13,6 +13,10 @@ class HTTPServer:
         self.port = port
         self.connection = None
 
+    @classmethod
+    def default_connection(cls):
+        return cls(54879, '127.0.0.1')
+
     def start_server(self):
         with socket() as sk:
             sk.bind(
@@ -47,10 +51,9 @@ class HTTPServer:
         Request(method, target, version_http, headers, self.connection, body=body)
 
     def read_body(self, header: dict, http_byte: BinaryIO):
-        if (content_length := int(header.get('Content-Length', '0'))) >= 0:  # Что делать с ошибкой?
-            body = http_byte.read(content_length)
-            return body
-        raise HTTPError("404?", "Empty body", self.connection)
+        if (content_length := int(header.get('Content-Length', '0'))) >= 0:
+            return http_byte.read(content_length)
+        raise HTTPError("400", "Bad request", self.connection)
 
     @staticmethod
     def read_byte_file(http_byte: BinaryIO) -> list[str]:
