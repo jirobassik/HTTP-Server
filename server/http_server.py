@@ -6,7 +6,6 @@ from .util.conf import ENCODING
 from .http_error import HTTPError
 from .request import Request
 
-
 class HTTPServer:
     def __init__(self, port, host=""):
         self.host = host
@@ -33,7 +32,7 @@ class HTTPServer:
                     try:
                         self.http_treatment(self.connection)
                         logger.debug("Connection close")
-                    except HTTPError as error:
+                    except (HTTPError, Exception) as error:
                         logger.warning(error)
                 logger.info(f"Connection {address} lost")
 
@@ -51,9 +50,12 @@ class HTTPServer:
         Request(method, target, version_http, headers, self.connection, body=body)
 
     def read_body(self, header: dict, http_byte: BinaryIO):
-        if (content_length := int(header.get('Content-Length', '0'))) >= 0:
-            return http_byte.read(content_length)
-        raise HTTPError("400", "Bad request", self.connection)
+        try:
+            if (content_length := int(header.get('Content-Length', '0'))) >= 0:
+                return http_byte.read(content_length)
+            raise HTTPError("400", "Bad request", self.connection)
+        except ValueError:
+            raise HTTPError("400", "Bad request", self.connection)
 
     @staticmethod
     def read_byte_file(http_byte: BinaryIO) -> list[str]:

@@ -148,9 +148,7 @@ class Request(Multipart):
         Response("200", "OK", self.connection).send_response()
 
     def post_content_type(self):
-        print('post_cont')
         if content_type := self.headers.get('Content-Type', ''):
-            print(content_type)
             if client_cont := self.client_content_type(content_type, self.body):
                 return client_cont
         raise HTTPError('400', 'Bad request', self.connection)

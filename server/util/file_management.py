@@ -5,17 +5,19 @@ from functools import lru_cache
 
 from .logging_conf import logger
 from .substring import write_file_byte, create_file
+from .json_util import json_upload_key
+from .conf import JSON_PATH
 
 
 class FileManagement:
     def __init__(self, target):
         self.__update_path = None
         self.target = target
-        self.__valid_folders, self.__server_path = ("view", "image",), ["/", ]
+        self.__valid_folders, self.__server_path = json_upload_key(JSON_PATH, 'valid_folders'), ["/", ]
         self.__standart_path = [
             join("/", valid_folder, file_name).replace("\\", "/")
             for valid_folder in self.__valid_folders
-            for file_name in listdir(valid_folder)
+            for file_name in self.get_folder_files(valid_folder)
         ]
         self.__special_folder_path = [
             f"/{valid_folder}{path}"
@@ -75,12 +77,15 @@ class FileManagement:
 
     @staticmethod
     def get_folder_files(folder_name: str) -> list:
-        return listdir(folder_name)
+        try:
+            list_dir = listdir(folder_name)
+            return list_dir
+        except FileNotFoundError:
+            pass
 
     @staticmethod
     @lru_cache(maxsize=None, typed=True)
     def client_content_type(content_type: str, body):
-        print(content_type, body)
         if content_type in ('image/png', 'image/jpeg',):
             return write_file_byte, body
         elif content_type in ('text/css', 'text/html', 'text/plain', 'text/js',

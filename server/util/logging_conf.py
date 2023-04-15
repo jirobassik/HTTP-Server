@@ -5,7 +5,7 @@ logger = logging.getLogger('Server Logger')
 logger.setLevel(logging.DEBUG)
 
 # Создаем обработчик для записи логов в файл
-file_handler = logging.FileHandler('logs/server_log.log')
+file_handler = logging.FileHandler('server/logs/server_log.log')
 file_handler.setLevel(logging.INFO)
 
 # Создаем обработчик для вывода логов на консоль
