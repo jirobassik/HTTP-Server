@@ -53,9 +53,14 @@ server_ = HTTPServer.default_connection()
 
 @click.command(name='start_server')
 # @click.option('--interruptible', is_flag=True, default=False, help='Allow user to interrupt the program with Ctrl+C.')
-def server_start_stop(interruptible):
-    server_.start_server(interruptible)
+def server_start_stop():
+    try:
+        server_.start_server()
+    except KeyboardInterrupt:
+        print("Stop server")
 
+
+# --------------------------------------------------------------------------
 
 server_cli.add_command(client_f_set)
 server_cli.add_command(client_f_del)

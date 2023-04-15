@@ -1,5 +1,5 @@
 from socket import socket
-from .util.logging_conf import logger
+from logs.logging_conf import logger
 from .util.conf import ENCODING
 
 

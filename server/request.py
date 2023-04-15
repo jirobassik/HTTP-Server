@@ -4,7 +4,7 @@ from types import MappingProxyType
 
 from .http_error import HTTPError
 from .util import substring
-from .util import logging_conf
+from logs import logging_conf
 from .response import Response
 from .multipart import Multipart
 

@@ -3,7 +3,7 @@ from os.path import join, splitext
 from types import MappingProxyType
 from functools import lru_cache
 
-from .logging_conf import logger
+from logs.logging_conf import logger
 from .substring import write_file_byte, create_file
 from .json_util import json_upload_key
 from .conf import JSON_PATH

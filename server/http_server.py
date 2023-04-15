@@ -1,15 +1,16 @@
 from socket import socket
 from typing import BinaryIO
 from .util import substring
-from .util.logging_conf import logger
+from logs.logging_conf import logger
 from .util.conf import ENCODING
 from .http_error import HTTPError
 from .request import Request
 
+
 class HTTPServer:
     def __init__(self, port, host=""):
-        self.host = host
-        self.port = port
+        self.__host = host
+        self.__port = port
         self.connection = None
 
     @classmethod
@@ -18,19 +19,14 @@ class HTTPServer:
 
     def start_server(self):
         with socket() as sk:
-            sk.bind(
-                (
-                    self.host,
-                    self.port,
-                )
-            )
+            sk.bind((self.__host, self.__port,))
             sk.listen(4)
             while True:
                 self.connection, address = sk.accept()
                 with self.connection:
                     logger.info(f"Connect address {address}")
                     try:
-                        self.http_treatment(self.connection)
+                        self.http_accept(self.connection)
                         logger.debug("Connection close")
                     except (HTTPError, Exception) as error:
                         logger.warning(error)
@@ -47,6 +43,10 @@ class HTTPServer:
         headers = self.read_header_lines(http_list)
         logger.debug(f"Headers: {headers}")
         body = self.read_body(headers, http_file)
+        return method, target, version_http, headers, body
+
+    def http_accept(self, http: socket):
+        method, target, version_http, headers, body = self.http_treatment(http)
         Request(method, target, version_http, headers, self.connection, body=body)
 
     def read_body(self, header: dict, http_byte: BinaryIO):
@@ -79,3 +79,11 @@ class HTTPServer:
                 req_line, sign=":"
             )
         }
+
+    @property
+    def host(self):
+        return self.__host
+
+    @property
+    def port(self):
+        return self.__port
