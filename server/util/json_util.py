@@ -8,6 +8,13 @@ def json_save(path: str, list_folders: tuple, key_name: str) -> NoReturn:
     with open(path, 'w', encoding='utf-8') as file_json:
         json.dump(data, file_json, indent=4, ensure_ascii=False)
 
+def json_save_one(path: str, value_name, key_name: str) -> NoReturn:
+    with open(path, encoding='utf-8') as file_json:
+        data = json.load(file_json)
+    data[key_name] = value_name
+    with open(path, 'w', encoding='utf-8') as file_json:
+        json.dump(data, file_json, indent=4, ensure_ascii=False)
+
 def json_upload_key(path: str, key_name: str) -> list:
     with open(path, encoding='utf-8') as file_json:
         data = json.load(file_json)

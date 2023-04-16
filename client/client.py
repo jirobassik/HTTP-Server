@@ -9,18 +9,29 @@ from server.util.file_management import FileManagement
 from server.util.conf import ENCODING
 from server.util.substring import read_file_byte
 from .client_error import ClientError
+from .response_client import ClientResponse
 
 
 class Client(HTTPServer, FileManagement):
-    def connect_server(self, message: bytes):
+    def connect_server_cli(self, method, url, headers_dict, body, version=None, ):
         with socket() as cl_sk:
             cl_sk.connect((self.host, self.port,))
-            cl_sk.sendall(message)
+            ClientResponse(method, url, cl_sk, body, version, **headers_dict).send_response()
             cl_sk.settimeout(None)
-            try:
-                self.http_accept(cl_sk)
-            except ClientError as cle:
-                print(cle)
+            self.http_handle(cl_sk)
+
+    def connect_server_file(self, file_mes):
+        with socket() as cl_sk:
+            cl_sk.connect((self.host, self.port,))
+            cl_sk.sendall(file_mes)
+            cl_sk.settimeout(None)
+            self.http_handle(cl_sk)
+
+    def http_handle(self, http: socket):
+        try:
+            self.http_accept(http)
+        except ClientError as cle:
+            print(cle)
 
     def http_treatment(self, http: socket):
         http_file = http.makefile("rb")
@@ -57,7 +68,11 @@ class Client(HTTPServer, FileManagement):
     def read_file_name(header: dict):
         content_disp = header.get('Content-Disposition', 'filename="default"')
         match = re.search(r"filename='(.+)'", content_disp)
-        return match.group(1)
+        try:
+            match_str = match.group(1)
+            return match_str
+        except AttributeError:
+            raise ClientError('No content-disposition')
 
     def http_accept(self, http: socket):
         version_http, status_code, status_message, headers, body = self.http_treatment(http)
@@ -79,4 +94,3 @@ class Client(HTTPServer, FileManagement):
     def header_view(headers: dict):
         for name, value in headers.items():
             print(f'{name}: {value}')
-

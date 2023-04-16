@@ -52,9 +52,22 @@ class HTTPServer:
         Request(method, target, version_http, headers, self.connection, body=body)
 
     def read_body(self, header: dict, http_byte: BinaryIO):
+        body_byte = None
+
+        def byte_read(con_len):
+            nonlocal body_byte
+            body_byte = http_byte.read(con_len)
+
         try:
             if (content_length := int(header.get('Content-Length', '0'))) >= 0:
-                return http_byte.read(content_length)
+                event = threading.Event()
+                thread_read_file = threading.Thread(target=byte_read, args=(content_length,))
+                thread_read_file.start()
+                thread_read_file.join(2)
+                if thread_read_file.is_alive():
+                    event.set()
+                    raise HTTPError("400", "Bad request", connection_host=self.connection)
+                return body_byte
             raise HTTPError("400", "Bad request", self.connection)
         except ValueError:
             raise HTTPError("400", "Bad request", self.connection)
