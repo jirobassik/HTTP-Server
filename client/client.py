@@ -1,19 +1,26 @@
+from pathlib import Path
 from socket import socket
 from typing import BinaryIO
+from os import path
+import re
 
 from server.http_server import HTTPServer
-from server.http_error import HTTPError
+from server.util.file_management import FileManagement
+from server.util.conf import ENCODING
+from server.util.substring import read_file_byte
+from .client_error import ClientError
 
 
-class Client(HTTPServer):
+class Client(HTTPServer, FileManagement):
     def connect_server(self, message: bytes):
         with socket() as cl_sk:
             cl_sk.connect((self.host, self.port,))
             cl_sk.sendall(message)
+            cl_sk.settimeout(None)
             try:
                 self.http_accept(cl_sk)
-            except HTTPError:
-                pass
+            except ClientError as cle:
+                print(cle)
 
     def http_treatment(self, http: socket):
         http_file = http.makefile("rb")
@@ -28,19 +35,48 @@ class Client(HTTPServer):
         method, target, version_http = req_line.split(' ', 2)
         return method, target, version_http
 
+    def read_byte_file(self, http_byte: BinaryIO, timeout: int = 2) -> list[str]:
+        headers = []
+        while (line := http_byte.readline()) not in b"\r\n":
+            headers.append(line.decode(ENCODING).replace("\r\n", ""))
+        return headers
+
     def read_body(self, header: dict, http_byte: BinaryIO):
         if (content_length := int(header.get('Content-Length', '0'))) >= 0:
             return http_byte.read(content_length)
+        raise ClientError()
+
+    def read_content_type(self, header: dict, body):
+        if content_type := header.get('Content-Type', ''):
+            content_type = content_type.split('; ')[0]
+            if client_cont := self.client_content_type(content_type, body):
+                return client_cont
+        raise ClientError()
+
+    @staticmethod
+    def read_file_name(header: dict):
+        content_disp = header.get('Content-Disposition', 'filename="default"')
+        match = re.search(r"filename='(.+)'", content_disp)
+        return match.group(1)
 
     def http_accept(self, http: socket):
         version_http, status_code, status_message, headers, body = self.http_treatment(http)
-        print(version_http, status_code, status_message, )
+        print(version_http, status_code, status_message)
+        self.header_view(headers)
         if body:
-            print('Body')
-            print(body.decode())
+            file_name = self.read_file_name(headers)
+            create_new_file, body = self.read_content_type(headers, body)
+            create_new_file('client/accept_files', f'/{file_name}', body)
 
+    @staticmethod
+    def request_from_file(file_name):
+        if path.exists(Path(Path.cwd(), 'client', 'requests', file_name)):
+            return read_file_byte('client/requests', f'/{file_name}')
+        else:
+            raise ClientError(f'File not found')
 
-client = Client.default_connection()
-mes = (b"GET /view/viw.css HTTP/1.1\r\n"
-       b"Accept: text/html\r\n\r\n")
-client.connect_server(mes)
+    @staticmethod
+    def header_view(headers: dict):
+        for name, value in headers.items():
+            print(f'{name}: {value}')
+

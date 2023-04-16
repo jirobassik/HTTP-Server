@@ -1,3 +1,4 @@
+import threading
 from socket import socket
 from typing import BinaryIO
 from .util import substring
@@ -21,6 +22,7 @@ class HTTPServer:
         with socket() as sk:
             sk.bind((self.__host, self.__port,))
             sk.listen(4)
+            sk.settimeout(None)
             while True:
                 self.connection, address = sk.accept()
                 with self.connection:
@@ -34,7 +36,7 @@ class HTTPServer:
 
     def http_treatment(self, http: socket):
         http_file = http.makefile("rb")
-        http_list = self.read_byte_file(http_file)
+        http_list = self.read_byte_file(http_file, timeout=2)
         request_line = http_list.pop(0)
         method, target, version_http = self.read_request_line(request_line)
         logger.debug(
@@ -57,11 +59,20 @@ class HTTPServer:
         except ValueError:
             raise HTTPError("400", "Bad request", self.connection)
 
-    @staticmethod
-    def read_byte_file(http_byte: BinaryIO) -> list[str]:
+    def read_byte_file(self, http_byte: BinaryIO, timeout: int) -> list[str]:
         headers = []
-        while (line := http_byte.readline()) not in b"\r\n":
-            headers.append(line.decode(ENCODING).replace("\r\n", ""))
+
+        def read():
+            while (line := http_byte.readline()) not in b"\r\n":
+                headers.append(line.decode(ENCODING).replace("\r\n", ""))
+
+        event = threading.Event()
+        thread_read_file = threading.Thread(target=read)
+        thread_read_file.start()
+        thread_read_file.join(timeout)
+        if thread_read_file.is_alive():
+            event.set()
+            raise HTTPError("400", "Bad request", connection_host=self.connection)
         return headers
 
     def read_request_line(self, req_line: str) -> tuple[str, str, str]:

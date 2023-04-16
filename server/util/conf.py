@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Final
 
 JSON_PATH: Final = 'server/temp_files/path.json'
@@ -6,3 +7,4 @@ CRLF: Final = '\r\n'
 PROGRAM_FOLDERS: Final = ('.git', '.idea', 'logs', 'server', 'venv', '__pycache__', )
 CLIENT_FOLDERS: Final = ('image', 'view', )
 ALLOW_HEADERS: Final = ('Host', 'User-Agent', 'Accept', 'Content-Type', 'Content-Length', )
+LOG_PATH: Final = Path('server_log.log', )

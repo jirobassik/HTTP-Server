@@ -1,11 +1,12 @@
 import logging
+from server.util.conf import LOG_PATH
 
 # Создаем логгер
 logger = logging.getLogger('Server Logger')
 logger.setLevel(logging.DEBUG)
 
 # Создаем обработчик для записи логов в файл
-file_handler = logging.FileHandler('../server_log.log')
+file_handler = logging.FileHandler(LOG_PATH)
 file_handler.setLevel(logging.INFO)
 
 # Создаем обработчик для вывода логов на консоль

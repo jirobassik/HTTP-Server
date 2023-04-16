@@ -100,6 +100,7 @@ class Request(Multipart):
         header = {
             "Content-Type": f"{self.extension_content_type(self.get_file_extension(file_name))}; charset=utf-8",
             "Content-Length": len(read_file),
+            "Content-Disposition": f"attachment; filename='{file_name}'"
         }
         Response("200", "OK", self.connection, body=read_file, **header).send_response()
 

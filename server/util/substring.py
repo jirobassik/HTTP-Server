@@ -18,5 +18,5 @@ def clear_file(path_folder: str, file_name: str):
     open(path_folder + file_name, 'w').close()
 
 def create_file(path_folder: str, file_name: str, data):
-    with open(path_folder + file_name, 'w') as file:
+    with open(path_folder + file_name, 'w', newline='') as file:
         file.write(data)
