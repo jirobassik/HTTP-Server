@@ -69,6 +69,7 @@ def server_stop():
             json_save_one(JSON_PATH, -1, 'ppid')
             break
     else:
+        json_save_one(JSON_PATH, -1, 'ppid')
         print("Server is not running")
 
 

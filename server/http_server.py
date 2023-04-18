@@ -44,33 +44,11 @@ class HTTPServer:
         )
         headers = self.read_header_lines(http_list)
         logger.debug(f"Headers: {headers}")
-        body = self.read_body(headers, http_file)
-        return method, target, version_http, headers, body
+        return method, target, version_http, headers, http_file
 
     def http_accept(self, http: socket):
-        method, target, version_http, headers, body = self.http_treatment(http)
-        Request(method, target, version_http, headers, self.connection, body=body)
-
-    def read_body(self, header: dict, http_byte: BinaryIO):
-        body_byte = None
-
-        def byte_read(con_len):
-            nonlocal body_byte
-            body_byte = http_byte.read(con_len)
-
-        try:
-            if (content_length := int(header.get('Content-Length', '0'))) >= 0:
-                event = threading.Event()
-                thread_read_file = threading.Thread(target=byte_read, args=(content_length,))
-                thread_read_file.start()
-                thread_read_file.join(2)
-                if thread_read_file.is_alive():
-                    event.set()
-                    raise HTTPError("400", "Bad request", connection_host=self.connection)
-                return body_byte
-            raise HTTPError("400", "Bad request", self.connection)
-        except ValueError:
-            raise HTTPError("400", "Bad request", self.connection)
+        method, target, version_http, headers, http_file = self.http_treatment(http)
+        Request(method, target, version_http, headers, self.connection, http_file=http_file)
 
     def read_byte_file(self, http_byte: BinaryIO, timeout: int) -> list[str]:
         headers = []

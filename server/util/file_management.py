@@ -2,6 +2,7 @@ from os import listdir
 from os.path import join, splitext
 from types import MappingProxyType
 from functools import lru_cache
+from re import match
 
 from logs.logging_conf import logger
 from .substring import write_file_byte, create_file
@@ -56,12 +57,14 @@ class FileManagement:
         return True
 
     def validate_path_post(self) -> bool:
-        folder_name, file_name = self.split_path(self.target)
-        if folder_name in self.__valid_folders and file_name:
-            return True
+        if self.valid_post_path(self.target):
+            folder_name, file_name = self.split_path(self.target)
+            if folder_name in self.__valid_folders and file_name:
+                return True
         return False
 
     @staticmethod
+    @lru_cache(maxsize=None)
     def extension_content_type(extension: str) -> str | None:
         extension_dict = MappingProxyType(
             {
@@ -71,6 +74,7 @@ class FileManagement:
                 ".jpeg": "image/jpeg",
                 ".svg": "image/svg+xml",
                 ".txt": "text/plain",
+                ".js": "text/javascript"
             }
         )
         return extension_dict.get(extension)
@@ -88,7 +92,7 @@ class FileManagement:
     def client_content_type(content_type: str, body):
         if content_type in ('image/png', 'image/jpeg',):
             return write_file_byte, body
-        elif content_type in ('text/css', 'text/html', 'text/plain', 'text/js',
+        elif content_type in ('text/css', 'text/html', 'text/plain', 'text/javascript',
                               'application/octet-stream', 'image/svg+xml'):
             return create_file, body.decode()
 
@@ -102,6 +106,11 @@ class FileManagement:
     @lru_cache(maxsize=None)
     def split_path(path: str):
         return path.lstrip("/").split("/", 1)
+
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def valid_post_path(path: str) -> bool:
+        return bool(match('^/\w+/\w+', path))
 
     @property
     def update_path(self):
