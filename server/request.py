@@ -1,5 +1,4 @@
 import threading
-from itertools import chain
 from socket import socket
 from types import MappingProxyType
 from typing import BinaryIO
@@ -107,10 +106,7 @@ class Request(Multipart):
         Response("200", "OK", self.connection, body=read_file, **header).send_response()
 
     def server_request(self, path):
-        allow_path_request = tuple(
-            chain(self.server_path, self.standart_path, self.special_folder_path)
-        )
-        headers = {"Allow path requests": f'{", ".join(allow_path_request)}'}
+        headers = {"Allow path requests": f'{", ".join(self.allow_path_request)}'}
         Response("200", "OK", self.connection, **headers).send_response()
 
     def special_request(self, path):

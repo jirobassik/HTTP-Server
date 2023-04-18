@@ -1,3 +1,4 @@
+from itertools import chain
 from os import listdir
 from os.path import join, splitext
 from types import MappingProxyType
@@ -25,6 +26,9 @@ class FileManagement:
             for valid_folder in self.__valid_folders
             for path in ("/*", "/",)
         ]
+        self.__allow_path_request = tuple(
+            chain(self.server_path, self.standart_path, self.special_folder_path)
+        )
 
     def validate_path(self, method: str) -> bool:
         match method:
@@ -33,7 +37,7 @@ class FileManagement:
             case "POST":
                 return self.validate_path_post()
             case "OPTIONS":
-                return True
+                return self.validate_path_options()
 
     def validate_path_get(self) -> bool:
         if self.target in self.__standart_path:
@@ -61,6 +65,11 @@ class FileManagement:
             folder_name, file_name = self.split_path(self.target)
             if folder_name in self.__valid_folders and file_name:
                 return True
+        return False
+
+    def validate_path_options(self) -> bool:
+        if self.target in self.__allow_path_request or self.target == '*':
+            return True
         return False
 
     @staticmethod
@@ -131,3 +140,7 @@ class FileManagement:
     @property
     def special_folder_path(self):
         return self.__special_folder_path
+
+    @property
+    def allow_path_request(self):
+        return self.__allow_path_request
