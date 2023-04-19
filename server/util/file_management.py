@@ -38,6 +38,8 @@ class FileManagement:
                 return self.validate_path_post()
             case "OPTIONS":
                 return self.validate_path_options()
+            case "DELETE":
+                return self.validate_path_delete()
 
     def validate_path_get(self) -> bool:
         if self.target in self.__standart_path:
@@ -71,6 +73,9 @@ class FileManagement:
         if self.target in self.__allow_path_request or self.target == '*':
             return True
         return False
+
+    def validate_path_delete(self) -> bool:
+        return True if self.target in self.standart_path else False
 
     @staticmethod
     @lru_cache(maxsize=None)

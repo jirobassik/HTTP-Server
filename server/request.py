@@ -43,6 +43,7 @@ class Request(Multipart):
                 "GET",
                 "POST",
                 "OPTIONS",
+                "DELETE"
         ):
             raise HTTPError(
                 "405",
@@ -133,6 +134,8 @@ class Request(Multipart):
                 self.post_request()
             case "OPTIONS":
                 self.options_request()
+            case "DELETE":
+                self.delete_request()
 
     def get_request(self):
         path_type, path = self.update_path
@@ -145,7 +148,7 @@ class Request(Multipart):
         read_body = self.post_read_body(self.headers, self.http_file)
         create_file, body = self.post_content_type(read_body)
         create_file(folder_name, f'/{file_name}', body)
-        Response("200", "OK", self.connection).send_response()
+        Response("201", "Created", self.connection).send_response()
 
     def post_read_body(self, header: dict, http_byte: BinaryIO) -> bytes:
         body_byte = None
@@ -182,3 +185,8 @@ class Request(Multipart):
             "OPTIONS-Headers": "All(ignored)",
         }
         Response("200", "OK", self.connection, **header).send_response()
+
+    def delete_request(self):
+        folder_name, file_name = self.split_path(self.target)
+        substring.delete_file(folder_name, file_name)
+        Response("200", "OK", self.connection).send_response()
