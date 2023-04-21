@@ -7,4 +7,4 @@ CRLF: Final = '\r\n'
 PROGRAM_FOLDERS: Final = ('.git', '.idea', 'logs', 'server', 'venv', '__pycache__', )
 CLIENT_FOLDERS: Final = ('image', 'view', )
 ALLOW_HEADERS: Final = ('Host', 'User-Agent', 'Accept', 'Content-Type', 'Content-Length', )
-LOG_PATH: Final = Path('server_log.log', )
+LOG_PATH: Final = Path('logs', 'server_log.log', )

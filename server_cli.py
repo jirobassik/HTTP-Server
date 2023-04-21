@@ -2,7 +2,6 @@ import click
 from server.util.json_util import json_save, json_clear_valid_folders, json_upload_key, json_del_valid_folder, \
     json_save_one
 from server.util.conf import CLIENT_FOLDERS
-from server.http_server import HTTPServer
 from server.util.conf import JSON_PATH
 import psutil
 
@@ -49,8 +48,6 @@ def client_f_del(folder_name):
 
 
 # --------------------------------------------------------------------------
-
-server_ = HTTPServer.default_connection()
 
 
 @click.command(name='start_server')
